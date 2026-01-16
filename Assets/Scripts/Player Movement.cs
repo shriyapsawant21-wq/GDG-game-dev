@@ -14,12 +14,12 @@ public class PlayerMovement: MonoBehaviour
     public float jumpForce;
     public float coyoteTime=0.1f;
     public float jumpBufferTime=0.1f;
-    public float jumpCutMultplier=0.5f;
+    public float jumpCutMultiplier=0.5f;
 
     //ground
     public Transform groundCheck;
-    public float groundCheckRadies=0.2f;
-    public LayerMAsk groundLayer;
+    public float groundCheckRadius=0.2f;
+    public LayerMask groundLayer;
 
     private bool isGrounded;
     private float coyoteCounter;
@@ -40,12 +40,16 @@ public class PlayerMovement: MonoBehaviour
 
     void Update()
     {
-        
+        GroundCheck();
+        HandleCoyotetime();
+        HandleJumpBuffer();
+        TryJump();
+        HandleJumpCut();
     }
 
     void FixedUpdate()
     {
-        rb.velocity=new Vector2(moveInput*moveSpeed, rb.velocity.y);
+        rb.linearVelocity=new Vector2(movementX*speed, rb.linearVelocity.y);
     }
 
     public void OnMove(InputValue value)
@@ -71,7 +75,7 @@ public class PlayerMovement: MonoBehaviour
     {
         if(jumpBufferCounter>0f && coyoteCounter>0f)
         {
-            rb.velocity= new vector2(rb.velocity.x,jumForce);
+            rb.linearVelocity= new Vector2(rb.linearVelocity.x,jumpForce);
             jumpBufferCounter=0f;
             coyoteCounter=0f;
         }
@@ -79,9 +83,9 @@ public class PlayerMovement: MonoBehaviour
 
     void HandleJumpCut()
     {
-        if(!jumpHeld && rb.velocity.y>0f)
+        if(!jumpHeld && rb.linearVelocity.y>0f)
         {
-            rb.velocity=new Vector2(rb.velocity.x,rbvelocity.y*jumpCutMultplier);
+            rb.linearVelocity=new Vector2(rb.linearVelocity.x,rb.linearVelocity.y*jumpCutMultiplier);
         }
     }
 
@@ -93,18 +97,18 @@ public class PlayerMovement: MonoBehaviour
         }
         else
         {
-            coyoteCounter-=coyoteTime.deltaTime;
+            coyoteCounter-=Time.deltaTime;
         }
     }
 
     void HandleJumpBuffer()
-    {jumpBufferCounter-=coyoteTime.deltaTime;
+    {jumpBufferCounter-=Time.deltaTime;
         
     }
 
     void GroundCheck()
     {
-        isGrounded=Physics2D.OverlapCircle(groundCheck.position,groundCheckRadies,groundLayer);
+        isGrounded=Physics2D.OverlapCircle(groundCheck.position,groundCheckRadius,groundLayer);
     }
 
 
