@@ -6,10 +6,26 @@ public class PlayerMovement: MonoBehaviour
 {
 
     private Rigidbody2D rb;
+    //movement
     public float speed=5f;
     private float movementX;
-    public float jump;
-    public bool isJumping;
+
+    //jump
+    public float jumpForce;
+    public float coyoteTime=0.1f;
+    public float jumpBufferTime=0.1f;
+    public float jumpCutMultplier=0.5f;
+
+    //ground
+    public Transform groundCheck;
+    public float groundCheckRadies=0.2f;
+    public LayerMAsk groundLayer;
+
+    private bool isGrounded;
+    private float coyoteCounter;
+    private float jumpBufferCounter;
+    private bool jumpHeld;
+
 
 
     void Start()
@@ -22,32 +38,75 @@ public class PlayerMovement: MonoBehaviour
         }
     }
 
-    public void OnMove(InputValue value)
-    {
-        Vector2 inputVector=value.Get<Vector2>();
-
-        movementX=inputVector.x;
-    }
-
     void Update()
     {
-        Jump();
+        
     }
 
     void FixedUpdate()
     {
-        Vector2 movement=new Vector2(movementX*speed,rb.linearVelocity.y);
-        rb.linearVelocity=movement;
+        rb.velocity=new Vector2(moveInput*moveSpeed, rb.velocity.y);
     }
 
-    void Jump()
+    public void OnMove(InputValue value)
     {
-        if(Input.GetButtonDown("Jump"))
+        movementX=value.Get<Vector2>().x;
+    }
+
+    public void OnJump(InputValue value)
+    {
+        if (value.isPressed)
         {
-            rb.AddForce(new Vector2(rb.linearVelocity.x,jump));
-            isJumping=true;
+            jumpBufferCounter=jumpBufferTime;
+            jumpHeld=true;
+        }
+        else
+        {
+            jumpHeld=false;
         }
     }
+
+
+    void TryJump()
+    {
+        if(jumpBufferCounter>0f && coyoteCounter>0f)
+        {
+            rb.velocity= new vector2(rb.velocity.x,jumForce);
+            jumpBufferCounter=0f;
+            coyoteCounter=0f;
+        }
+    }
+
+    void HandleJumpCut()
+    {
+        if(!jumpHeld && rb.velocity.y>0f)
+        {
+            rb.velocity=new Vector2(rb.velocity.x,rbvelocity.y*jumpCutMultplier);
+        }
+    }
+
+    void HandleCoyotetime()
+    {
+        if(isGrounded)
+        {
+            coyoteCounter=coyoteTime;
+        }
+        else
+        {
+            coyoteCounter-=coyoteTime.deltaTime;
+        }
+    }
+
+    void HandleJumpBuffer()
+    {jumpBufferCounter-=coyoteTime.deltaTime;
+        
+    }
+
+    void GroundCheck()
+    {
+        isGrounded=Physics2D.OverlapCircle(groundCheck.position,groundCheckRadies,groundLayer);
+    }
+
 
 
 
