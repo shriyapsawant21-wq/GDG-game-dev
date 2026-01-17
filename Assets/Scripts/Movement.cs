@@ -4,7 +4,7 @@ public class Movement: MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private Rigidbody2D rb;
-    [SerializeField] private InputHandler inputHandler;
+    [SerializeField] public InputHandler inputHandler;
     [SerializeField] private GroundDetector groundDetector;
     [SerializeField] private Transform wallCheck;
     [SerializeField] private LayerMask wallLayer;
