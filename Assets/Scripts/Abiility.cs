@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class Ability : MonoBehaviour  // Class name MUST match filename
+public class Ability : MonoBehaviour
 {
     [SerializeField] private KeyCode abilityKey = KeyCode.LeftShift;
     [SerializeField] private float rewindDuration = 3f;
