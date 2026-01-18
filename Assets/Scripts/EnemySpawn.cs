@@ -6,6 +6,7 @@ public class EnemySpawn : MonoBehaviour
     [SerializeField] private float spawnDist = 12f;
     [SerializeField] private float spawnInterval = 5f;
     [SerializeField] private int maxEnemies = 3;
+    [SerializeField] private int initialSpawnCount = 1;
 
     private Transform player;
     private float timer;
@@ -15,11 +16,17 @@ public class EnemySpawn : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
         timer = spawnInterval;
+
+        for (int i = 0; i < initialSpawnCount; i++)
+        {
+            SpawnEnemy();
+        }
     }
 
     void Update()
     {
         if (player == null || enemyPrefab == null) return;
+
         timer -= Time.deltaTime;
 
         if (timer <= 0 && currentEnemies < maxEnemies)
@@ -39,6 +46,5 @@ public class EnemySpawn : MonoBehaviour
     public void EnemyDestroyed()
     {
         currentEnemies--;
-        if (currentEnemies < 0) currentEnemies = 0;
     }
 }

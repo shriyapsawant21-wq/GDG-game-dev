@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2031677232606488864}
   m_Layer: 0
   m_Name: Enemy
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -179,10 +179,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e83fb95537657e64fa35f2de4219ee09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAi
-  BossSpeed: 2
+  chaseSpeed: 3
+  retreatSpeed: 2.5
+  jumpForce: 10
   detectionRange: 8
-  AttackRange: 0.5
-  damage: 20
-  AttackCooldown: 1
-  SpawnDist: 10
-  Enemy: {fileID: 6201524702805006741}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  wallCheckDist: 0.7
+  obstacleCheck: {fileID: 0}
+  damage: 5
+  attackCooldownTime: 2
+  retreatDistance: 5
+  attackRangeLimits: {x: 1.2, y: 3.5}
+  currentState: 0

@@ -2,117 +2,95 @@ using UnityEngine;
 
 public class EnemyAi : MonoBehaviour
 {
-    [Header("Movement Stats")]
+    [Header("Movement")]
     [SerializeField] private float chaseSpeed = 3f;
-    [SerializeField] private float retreatSpeed = 2.5f;
-    [SerializeField] private float detectionRange = 10f;
+    [SerializeField] private float jumpForce = 12f;
+    [SerializeField] private float wallCheckDist = 0.8f;
+    [SerializeField] private LayerMask groundLayer;
 
-    [Header("Combat Logic")]
-    [SerializeField] private int damage = 20;
-    [SerializeField] private float attackCooldownTime = 2.0f; 
-    [SerializeField] private float retreatDistance = 5f;      
-    [SerializeField] private Vector2 attackRangeLimits = new Vector2(1.0f, 3.5f); 
+    [Header("Combat")]
+    [SerializeField] private Vector2 attackRangeLimits = new Vector2(1.2f, 3.5f);
+    [SerializeField] private float retreatDistance = 5f;
+    [SerializeField] private float cooldownTime = 1.5f;
 
     private Transform player;
     private Rigidbody2D rb;
-    private Ability playerAbility; 
     private float currentAttackRange;
-    private float cooldownTimer = 0f;
+    private float cooldownTimer;
+    private Ability playerAbility;
 
-    private enum State { Idle, Chasing, Attacking, Retreating, Cooldown }
-    [SerializeField] private State currentState = State.Idle;
+    private enum State { Chasing, Attacking, Retreating, Cooldown }
+    private State currentState = State.Chasing;
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
-        if (player != null) playerAbility = player.GetComponent<Ability>();
-        
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        playerAbility = player.GetComponent<Ability>();
         rb = GetComponent<Rigidbody2D>();
-        RandomizeAttackRange();
+        RandomizeRange();
     }
 
     void Update()
     {
-        if (player == null) return;
-
         if (playerAbility != null && playerAbility.IsRewinding)
         {
             rb.velocity = Vector2.zero;
             return;
         }
 
-        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        float dist = Vector2.Distance(transform.position, player.position);
 
         switch (currentState)
         {
-            case State.Idle:
-                if (distanceToPlayer <= detectionRange) currentState = State.Chasing;
-                break;
-
             case State.Chasing:
-                MoveTowardsPlayer(chaseSpeed);
-                if (distanceToPlayer <= currentAttackRange) currentState = State.Attacking;
+                MoveAndJump(dist);
+                if (dist <= currentAttackRange) currentState = State.Attacking;
                 break;
 
             case State.Attacking:
-                PerformAttack();
+                player.GetComponent<PlayerHealth>()?.TakeDamage(20);
                 currentState = State.Retreating;
                 break;
 
             case State.Retreating:
-                MoveAwayFromPlayer(retreatSpeed);
-                if (distanceToPlayer >= retreatDistance)
-                {
-                    cooldownTimer = attackCooldownTime;
-                    currentState = State.Cooldown;
-                }
+                MoveAway();
+                if (dist >= retreatDistance) { currentState = State.Cooldown; cooldownTimer = cooldownTime; }
                 break;
 
             case State.Cooldown:
                 rb.velocity = new Vector2(0, rb.velocity.y);
                 cooldownTimer -= Time.deltaTime;
-                if (cooldownTimer <= 0)
-                {
-                    RandomizeAttackRange();
-                    currentState = State.Chasing;
-                }
+                if (cooldownTimer <= 0) { RandomizeRange(); currentState = State.Chasing; }
                 break;
         }
-
-        if (Mathf.Abs(rb.velocity.x) > 0.1f) FlipSprite(rb.velocity.x);
     }
 
-    void MoveTowardsPlayer(float speed)
+    void MoveAndJump(float dist)
     {
-        float dirX = (player.position.x > transform.position.x) ? 1 : -1;
-        rb.velocity = new Vector2(dirX * speed, rb.velocity.y);
+        float dirX = player.position.x > transform.position.x ? 1 : -1;
+        rb.velocity = new Vector2(dirX * chaseSpeed, rb.velocity.y);
+
+        bool hittingWall = Physics2D.Raycast(transform.position, new Vector2(dirX, 0), wallCheckDist, groundLayer);
+        bool isGrounded = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, groundLayer);
+        
+        if (isGrounded && (hittingWall || player.position.y > transform.position.y + 2f))
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        }
+        
+        transform.localScale = new Vector3(dirX > 0 ? Mathf.Abs(transform.localScale.x) : -Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
     }
 
-    void MoveAwayFromPlayer(float speed)
+    void MoveAway()
     {
-        float dirX = (player.position.x > transform.position.x) ? -1 : 1;
-        rb.velocity = new Vector2(dirX * speed, rb.velocity.y);
+        float dirX = player.position.x > transform.position.x ? -1 : 1;
+        rb.velocity = new Vector2(dirX * chaseSpeed, rb.velocity.y);
     }
 
-    void PerformAttack()
-    {
-        PlayerHealth health = player.GetComponent<PlayerHealth>();
-        if (health != null) health.TakeDamage(damage);
-    }
-
-    void RandomizeAttackRange()
-    {
-        currentAttackRange = Random.Range(attackRangeLimits.x, attackRangeLimits.y);
-    }
-
-    void FlipSprite(float velX)
-    {
-        transform.localScale = new Vector3(velX > 0 ? Mathf.Abs(transform.localScale.x) : -Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-    }
+    void RandomizeRange() => currentAttackRange = Random.Range(attackRangeLimits.x, attackRangeLimits.y);
 
     private void OnDestroy()
     {
-        EnemySpawn spawner = FindFirstObjectByType<EnemySpawn>();
-        if (spawner != null) spawner.EnemyDestroyed();
+        FindObjectOfType<EnemySpawn>()?.EnemyDestroyed();
     }
 }

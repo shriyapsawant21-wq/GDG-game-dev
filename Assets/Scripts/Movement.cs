@@ -26,6 +26,7 @@ public class Movement: MonoBehaviour
     private float coyoteCounter;
     private float jumpBufferCounter;
 
+    private Ability playerability;
     [Header("Wall")]
     private bool isWallSliding;
     [SerializeField] private float wallSlidingSpeed=2f;
@@ -40,6 +41,7 @@ public class Movement: MonoBehaviour
     private bool isFacingRight=true;
     void Start()
     {
+        playerability=GetComponent<Ability>();
         if (rb == null) rb = GetComponent<Rigidbody2D>();
         if (inputHandler == null) inputHandler = GetComponent<InputHandler>();
         if (groundDetector == null) groundDetector = GetComponent<GroundDetector>();
@@ -63,6 +65,10 @@ public class Movement: MonoBehaviour
     
     void FixedUpdate()
     {
+        if(playerability!=null&&playerability.IsRewinding)
+        {
+            return;
+        }
 
         if (inputHandler != null&&!isWallJumping)
         {

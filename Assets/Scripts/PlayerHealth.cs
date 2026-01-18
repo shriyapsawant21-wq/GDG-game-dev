@@ -4,14 +4,14 @@ using UnityEngine.UI;
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Healthdefaultthing")]
-    [SerializeField] private int HealthMax=100;
+    [SerializeField] private int HealthMax=1000;
     [SerializeField] private Slider HealthSlider;
 
     [SerializeField] private SpriteRenderer Player;
 
     private int CurrentHealth;
-    public int CurrentHealthA=>CurrentHealth;
-    public int HealthMaxA=>HealthMax;
+    //public int CurrentHealthA=>CurrentHealth;
+    //public int HealthMaxA=>HealthMax;
 
 
     void Start()
