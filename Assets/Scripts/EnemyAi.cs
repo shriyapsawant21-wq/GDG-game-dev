@@ -2,101 +2,117 @@ using UnityEngine;
 
 public class EnemyAi : MonoBehaviour
 {
-    [Header("Movement")]
-    [SerializeField] private float BossSpeed=2f;
-    [SerializeField] private float detectionRange=8f;
-    [SerializeField] private float AttackRange=0.5f;
-    
-    [Header("Attack")]
-    [SerializeField] private int damage=20;
-    [SerializeField] private float AttackCooldown=1f;
+    [Header("Movement Stats")]
+    [SerializeField] private float chaseSpeed = 3f;
+    [SerializeField] private float retreatSpeed = 2.5f;
+    [SerializeField] private float detectionRange = 10f;
 
-    [Header("Spawning")]
-    [SerializeField] private float SpawnDist=10f;
-    [SerializeField] private GameObject Enemy;
+    [Header("Combat Logic")]
+    [SerializeField] private int damage = 20;
+    [SerializeField] private float attackCooldownTime = 2.0f; 
+    [SerializeField] private float retreatDistance = 5f;      
+    [SerializeField] private Vector2 attackRangeLimits = new Vector2(1.0f, 3.5f); 
 
-    private Transform Player;
-    private bool PlayerDetected =false;
-    private bool CanAttack=true;
+    private Transform player;
     private Rigidbody2D rb;
+    private Ability playerAbility; 
+    private float currentAttackRange;
+    private float cooldownTimer = 0f;
 
+    private enum State { Idle, Chasing, Attacking, Retreating, Cooldown }
+    [SerializeField] private State currentState = State.Idle;
 
     void Start()
     {
-        Player=GameObject.FindGameObjectWithTag("Player")?.transform;
-        rb=GetComponent<Rigidbody2D>();
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (player != null) playerAbility = player.GetComponent<Ability>();
+        
+        rb = GetComponent<Rigidbody2D>();
+        RandomizeAttackRange();
     }
 
     void Update()
     {
-        if(Player==null)
+        if (player == null) return;
+
+        if (playerAbility != null && playerAbility.IsRewinding)
         {
-            return;
-        }
-        float distance = Vector2.Distance(transform.position,Player.position);
-
-        if(distance<=detectionRange)
-        {
-            PlayerDetected=true;
-
-        }
-
-        if(PlayerDetected)
-        {
-            FollowPlayer();
-
-            if(distance<=AttackRange&&CanAttack)
-            {
-                AttackPlayer();
-            }
-        }
-    }
-
-    void FollowPlayer()
-    {
-        if(Player==null||rb==null)
-        {
+            rb.velocity = Vector2.zero;
             return;
         }
 
-        Vector2 direction=(Player.position-transform.position).normalized;
-        rb.velocity=direction*BossSpeed;
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
 
-        if(direction.x>0)
+        switch (currentState)
         {
-            transform.localScale=new Vector3(Mathf.Abs(transform.localScale.x),transform.localScale.y,transform.localScale.z);
+            case State.Idle:
+                if (distanceToPlayer <= detectionRange) currentState = State.Chasing;
+                break;
+
+            case State.Chasing:
+                MoveTowardsPlayer(chaseSpeed);
+                if (distanceToPlayer <= currentAttackRange) currentState = State.Attacking;
+                break;
+
+            case State.Attacking:
+                PerformAttack();
+                currentState = State.Retreating;
+                break;
+
+            case State.Retreating:
+                MoveAwayFromPlayer(retreatSpeed);
+                if (distanceToPlayer >= retreatDistance)
+                {
+                    cooldownTimer = attackCooldownTime;
+                    currentState = State.Cooldown;
+                }
+                break;
+
+            case State.Cooldown:
+                rb.velocity = new Vector2(0, rb.velocity.y);
+                cooldownTimer -= Time.deltaTime;
+                if (cooldownTimer <= 0)
+                {
+                    RandomizeAttackRange();
+                    currentState = State.Chasing;
+                }
+                break;
         }
-        else if(direction.x<0)
-        {
-            transform.localScale=new Vector3(-Mathf.Abs(transform.localScale.x),transform.localScale.y,transform.localScale.z);
-        }
+
+        if (Mathf.Abs(rb.velocity.x) > 0.1f) FlipSprite(rb.velocity.x);
     }
 
-    void AttackPlayer()
+    void MoveTowardsPlayer(float speed)
     {
-        PlayerHealth playerhealth=Player.GetComponent<PlayerHealth>();
-
-        if(playerhealth!=null)
-        {
-            playerhealth.TakeDamage(damage);
-        }
-
-        CanAttack=false;
-        Invoke(nameof(ResetAttack),AttackCooldown);
+        float dirX = (player.position.x > transform.position.x) ? 1 : -1;
+        rb.velocity = new Vector2(dirX * speed, rb.velocity.y);
     }
 
-    void ResetAttack()
+    void MoveAwayFromPlayer(float speed)
     {
-        CanAttack=true;
+        float dirX = (player.position.x > transform.position.x) ? -1 : 1;
+        rb.velocity = new Vector2(dirX * speed, rb.velocity.y);
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    void PerformAttack()
     {
-        if(collision.gameObject.CompareTag("Player")&&CanAttack)
-        {
-            AttackPlayer();
-        }
+        PlayerHealth health = player.GetComponent<PlayerHealth>();
+        if (health != null) health.TakeDamage(damage);
     }
 
-    
+    void RandomizeAttackRange()
+    {
+        currentAttackRange = Random.Range(attackRangeLimits.x, attackRangeLimits.y);
+    }
+
+    void FlipSprite(float velX)
+    {
+        transform.localScale = new Vector3(velX > 0 ? Mathf.Abs(transform.localScale.x) : -Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+    }
+
+    private void OnDestroy()
+    {
+        EnemySpawn spawner = FindFirstObjectByType<EnemySpawn>();
+        if (spawner != null) spawner.EnemyDestroyed();
+    }
 }

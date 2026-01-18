@@ -8,14 +8,14 @@ public class Ability : MonoBehaviour
     
     private List<Vector3> positions = new List<Vector3>();
     private bool isRewinding = false;
+
+    // Public property so EnemyAi can see it
+    public bool IsRewinding => isRewinding;
     
     void Update()
     {
-        if (Input.GetKeyDown(abilityKey))
-            StartRewind();
-        
-        if (Input.GetKeyUp(abilityKey))
-            StopRewind();
+        if (Input.GetKeyDown(abilityKey)) StartRewind();
+        if (Input.GetKeyUp(abilityKey)) StopRewind();
     }
     
     void FixedUpdate()
@@ -33,15 +33,6 @@ public class Ability : MonoBehaviour
         }
     }
     
-    void StartRewind()
-    {
-        isRewinding = true;
-        Debug.Log("Rewinding time...");
-    }
-    
-    void StopRewind()
-    {
-        isRewinding = false;
-        Debug.Log("Stopped rewinding");
-    }
+    void StartRewind() { isRewinding = true; }
+    void StopRewind() { isRewinding = false; }
 }
